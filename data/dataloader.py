@@ -18,6 +18,7 @@ from d_utils import extract_features
 root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound_recognition'
 META_CSV = os.path.join(root_dir, 'dataset/UrbanSound8K/metadata/UrbanSound8K.csv')
 IMAGE_DIR = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
+assert os.path.exists(IMAGE_DIR), 'Invalid image directory'
 
 def get_dataloader(batch_size, fold=[1], shuffle=True,
                    num_workers=0):
@@ -29,7 +30,7 @@ def get_dataloader(batch_size, fold=[1], shuffle=True,
 
 class UrbanSoundDataset(Dataset):
     """Custom dataset class for UrbanSound8K dataset"""
-    def __init__(self, fold=1, parent_dir=IMAGE_DIR, image_info=META_CSV):
+    def __init__(self, fold=1, parent_dir=IMAGE_DIR):
         assert isinstance(fold, list) and list
         fold = ['fold{}'.format(i) for i in fold]
         self.features, self.labels = extract_features(parent_dir=parent_dir,
@@ -46,7 +47,7 @@ class UrbanSoundDataset(Dataset):
 
 if __name__ == '__main__':
     batch_size = 1
-    fold = list(range(1,3))
+    fold = [1]
     loader = get_dataloader(fold=fold, batch_size=batch_size)
     for i, (img, label) in enumerate(loader):
         img = img.numpy()
