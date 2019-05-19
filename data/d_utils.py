@@ -4,6 +4,7 @@
 # Third party imports
 import librosa
 import numpy as np
+import torch
 from torch.autograd import Variable
 
 # Project level imports
@@ -16,19 +17,6 @@ def load_sound_files(file_paths):
         X,sr = librosa.load(fp)
         raw_sounds.append(X)
     return raw_sounds
-
-def extract_feature(file_name):
-    X, sample_rate = librosa.load(file_name)
-    stft = np.abs(librosa.stft(X))
-    mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T,axis=0)
-    chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
-    mel = np.mean(librosa.feature.melspectrogram(X, sr=sample_rate).T,axis=0)
-    contrast = np.mean(librosa.feature.spectral_contrast(S=stft, sr=sample_rate).T,axis=0)
-    tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X),
-    sr=sample_rate).T,axis=0)
-    return mfccs,chroma,mel,contrast,tonnetz
-
-
 
 def to_cuda(item, computing_device, label=False):
     """ Typecast item to cuda()
@@ -49,3 +37,43 @@ def to_cuda(item, computing_device, label=False):
     else:
         item = Variable(item.to(computing_device)).float()
     return item
+
+
+def windows(data, window_size):
+    start = 0
+    while start < len(data):
+        yield start, start + window_size
+        start += (window_size / 2)
+
+def extract_features(parent_dir, sub_dirs, file_ext="*.wav", bands=60,
+                     frames=41):
+    import glob
+    import os
+
+    window_size = 512 * (frames - 1)
+    log_specgrams = []
+    labels = []
+    for l, sub_dir in enumerate(sub_dirs):
+        print(sub_dir)
+        for fn in glob.glob(os.path.join(parent_dir, sub_dir, file_ext)):
+            sound_clip, s = librosa.load(fn)
+            label = os.path.basename(fn).split('-')[1]
+            for (start, end) in windows(sound_clip, window_size):
+                start, end = int(start), int(end)
+                if (len(sound_clip[start:end]) == window_size):
+                    signal = sound_clip[start:end]
+                    melspec = librosa.feature.melspectrogram(signal,
+                                                             n_mels=bands)
+                    logspec = librosa.amplitude_to_db(melspec)
+                    logspec = logspec.T.flatten()[:, np.newaxis].T
+                    log_specgrams.append(logspec)
+                    labels.append(label)
+
+    log_specgrams = np.asarray(log_specgrams).reshape(len(log_specgrams),
+                                                      bands, frames, 1)
+    features = np.concatenate(
+        (log_specgrams, np.zeros(np.shape(log_specgrams))), axis=3)
+    for i in range(len(features)):
+        features[i, :, :, 1] = librosa.feature.delta(features[i, :, :, 0])
+
+    return np.array(features), np.array(labels, dtype=np.int)
