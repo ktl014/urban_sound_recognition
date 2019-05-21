@@ -16,7 +16,7 @@ import torchvision.transforms as transforms
 from d_utils import extract_features
 
 # Module level constants
-root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound_recognition'
+root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound'
 META_CSV = os.path.join(root_dir, 'dataset/UrbanSound8K/metadata/UrbanSound8K.csv')
 IMAGE_DIR = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
 assert os.path.exists(IMAGE_DIR), 'Invalid image directory'

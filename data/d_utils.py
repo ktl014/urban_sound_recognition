@@ -64,7 +64,13 @@ def extract_features(parent_dir, sub_dirs, file_ext="*.wav", bands=60,
             if i % print_freq == 0:
                 print('{}: {}/{}'.format(sub_dir, i, len(files)))
 
+            # Get file
             sound_clip, samplerate = librosa.load(fn)
+            length = librosa.get_duration(sound_clip)
+
+            # Stretch sound
+            if (length < 4.0):
+                sound_clip = stretch_sound(sound_clip, length)
 
             # Get label
             label = os.path.basename(fn).split('-')[1]
@@ -85,6 +91,12 @@ def extract_features(parent_dir, sub_dirs, file_ext="*.wav", bands=60,
 
     return np.array(log_specgrams), np.array(labels, dtype=np.int)
 
+def stretch_sound(sound, length):
+    import math
+    repetition = math.ceil(4.0 / length)
+    sound_new = (sound * (int)(repetition))  # extend the sound clip to atleast 4 secs
+    sound_new = sound_new[:4000]  # crop sound to exactly 4 secs
+    return sound_new
 
 """ short time fourier transform of audio signal """
 def stft(sig, frameSize, overlapFac=0.5, window=np.hanning):
