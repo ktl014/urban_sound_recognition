@@ -4,6 +4,7 @@
 # Third party imports
 import cv2
 import librosa
+import random
 
 import scipy.io.wavfile as wav
 from numpy.lib import stride_tricks
@@ -15,6 +16,7 @@ from torch.autograd import Variable
 # Project level imports
 
 # Module level constants
+QUICK_DEV = False
 
 def load_sound_file(file_path):
     samplerate, sound_clip = wav.read(file_path)
@@ -48,7 +50,7 @@ def windows(data, window_size):
         yield start, start + window_size
         start += (window_size / 2)
 
-def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
+def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
                      frames=41, print_freq=10):
     import glob
     import os
@@ -57,7 +59,10 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
     labels = []
     bad_count = 0
     for l, fold in enumerate(folds):
-        files = glob.glob(os.path.join(parent_dir, fold, file_ext))
+        files = glob.glob(os.path.join(image_dir, fold, file_ext))
+        if QUICK_DEV:
+            files = random.sample(files, 200)
+
         for i, fn in enumerate(files):
             # Read in file
             try:
@@ -101,8 +106,8 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
                     ims = np.broadcast_to(ims, (3,) + ims.shape)
 
                     log_specgrams.append(ims)
-                    labels.append(label)
 
+            labels.append(label)
             window_features.append(log_specgrams)
 
     return np.array(window_features), np.array(labels, dtype=np.int)
