@@ -24,13 +24,13 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 
-from model import VGG,AlexNet
-from dataloader import get_dataloader
+from model_vgglstm import VGG,AlexNet
+from data.dataloader import get_dataloader
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
 
 parser.add_argument('-e', '--epochs', action='store', default=20, type=int, help='epochs (default: 20)')
-parser.add_argument('--batchSize', action='store', default=128, type=int, help='batch size (default: 128)')
+parser.add_argument('--batchSize', action='store', default=1, type=int, help='batch size (default: 128)')
 parser.add_argument('--windowSize', action='store', default=25, type=int, help='number of frames (default: 25)')
 parser.add_argument('--h_dim', action='store', default=256, type=int, help='LSTM hidden layer dimension (default: 256)')
 parser.add_argument('--lr','--learning-rate',action='store',default=0.01, type=float,help='learning rate (default: 0.01)')
@@ -42,8 +42,9 @@ parser.add_argument("--net", default='AlexNet', const='AlexNet',nargs='?', choic
 arg = parser.parse_args()
 
 def main():
-    torch.cuda.set_device(arg.gpu_num)
-    torch.cuda.current_device()
+    if torch.cuda.is_available() and arg.useGPU_F:
+        torch.cuda.set_device(arg.gpu_num)
+        torch.cuda.current_device()
     
     if not os.path.exists('model'):
         os.makedirs('model')
@@ -87,8 +88,7 @@ def main():
     optimizer = optim.Adam(model.parameters(),lr=arg.lr)
     criterion = nn.CrossEntropyLoss()
     optimizer.zero_grad()
-    hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False),
-               Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False))
+
     if arg.useGPU_f:
         hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False),
                    Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False))
@@ -108,14 +108,15 @@ def main():
             #loss=0.0
             if arg.useGPU_f:
                 y=torch.zeros(arg.batchSize, num_of_classes).cuda()
-                windowBatch = Variable(windowBatch.cuda(),requires_grad=True)
-                labelBatch = Variable(labelBatch.cuda(),requires_grad=False)
+                windowBatch = Variable(windowBatch.cuda(),requires_grad=True).float()
+                labelBatch = Variable(labelBatch.cuda(),requires_grad=False).long()
             else:
                 y=torch.zeros(arg.batchSize, num_of_classes)
-                windowBatch = Variable(windowBatch,requires_grad=True)
-                labelBatch = Variable(labelBatch,requires_grad=False)
-            
-            for i in range(arg.windowSize):
+                windowBatch = Variable(windowBatch,requires_grad=True).float()
+                labelBatch = Variable(labelBatch,requires_grad=False).long()
+
+            windowSize = windowBatch.shape[1]
+            for i in range(windowSize):
                 imgBatch = windowBatch[:,i,:,:,:]
                 temp,hidden = model(imgBatch,hidden)
                 (h,c) = hidden
@@ -124,7 +125,7 @@ def main():
                 #loss+=loss_.data
                 y += temp
             
-            Y=y/arg.windowSize
+            Y=y/windowSize
             #loss = Variable(loss.cuda(),requires_grad=True)
             loss = criterion(Y,labelBatch)
             loss.backward()
@@ -147,13 +148,15 @@ def main():
         for batchIdx,(windowBatch,labelBatch) in enumerate(testLoader):
             if arg.useGPU_f:
                 y=torch.zeros(arg.batchSize, num_of_classes).cuda()
-                windowBatch = Variable(windowBatch.cuda(),requires_grad=False)
-                labelBatch = Variable(labelBatch.cuda(),requires_grad=False)
+                windowBatch = Variable(windowBatch.cuda(),requires_grad=False).float()
+                labelBatch = Variable(labelBatch.cuda(),requires_grad=False).long()
             else:
                 y=torch.zeros(arg.batchSize, num_of_classes)
-                windowBatch = Variable(windowBatch,requires_grad=False)
-                labelBatch = Variable(labelBatch,requires_grad=False)
-            for i in range(arg.windowSize):
+                windowBatch = Variable(windowBatch,requires_grad=False).float()
+                labelBatch = Variable(labelBatch,requires_grad=False).long()
+
+            windowSize = windowBatch.shape[1]
+            for i in range(windowSize):
                 imgBatch = windowBatch[:,i,:,:,:]
                 temp,hidden = model(imgBatch,hidden)
                 (h,c) = hidden
@@ -162,7 +165,7 @@ def main():
                 #loss+=loss_.data
                 y += temp
             
-            Y=y/arg.windowSize
+            Y=y/windowSize
             loss = criterion(Y,labelBatch)
 
             _,pred = torch.max(Y,1)
@@ -188,14 +191,15 @@ def main():
     for batchIdx,(windowBatch,labelBatch) in enumerate(testLoader):
         if arg.useGPU_f:
             y=torch.zeros(arg.batchSize, num_of_classes).cuda()
-            windowBatch = Variable(windowBatch.cuda(),requires_grad=False)
-            labelBatch = Variable(labelBatch.cuda(),requires_grad=False)
+            windowBatch = Variable(windowBatch.cuda(),requires_grad=False).float()
+            labelBatch = Variable(labelBatch.cuda(),requires_grad=False).long()
         else:
             y=torch.zeros(arg.batchSize, num_of_classes)
-            windowBatch = Variable(windowBatch,requires_grad=False)
-            labelBatch = Variable(labelBatch,requires_grad=False)
-        
-        for i in range(arg.windowSize):
+            windowBatch = Variable(windowBatch,requires_grad=False).float()
+            labelBatch = Variable(labelBatch,requires_grad=False).long()
+
+        windowSize = windowBatch.shape[1]
+        for i in range(windowSize):
             imgBatch = windowBatch[:,i,:,:,:]
             temp,hidden = model(imgBatch,hidden)
             (h,c) = hidden
@@ -204,7 +208,7 @@ def main():
             #loss+=loss_.data
             y += temp
 
-        Y=y/arg.windowSize
+        Y=y/windowSize
         loss = criterion(Y,labelBatch)
         _,pred = torch.max(y,1)
         test_acc += (pred == labelBatch.data).sum()

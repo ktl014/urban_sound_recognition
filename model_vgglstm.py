@@ -28,9 +28,10 @@ class dVGG(nn.Module):
         self.d2LSTM = d2LSTM(h_dim)
         self.h_dim=h_dim
         
-    def forward(self,x,(h0,c),h1,dv1,s,h2,dv2,s_):
+    def forward(self,x,h0_c,h1,dv1,s,h2,dv2,s_):
         f = self.model(x)
         f = f.view(1,-1,4096)
+        h0, c = h0_c
         hidden = (h0.view(1,-1,self.h_dim),c.view(1,-1,self.h_dim))
         out,hidden = self.LSTM(f,hidden)
         h1,dv1,s = self.dLSTM(out,h1,dv1,s)
@@ -54,9 +55,10 @@ class dAlexNet(nn.Module):
         self.d2LSTM = d2LSTM(h_dim)
         self.h_dim=h_dim
         
-    def forward(self,x,(h0,c),h1,dv1,s,h2,dv2,s_):
+    def forward(self,x,h0_c,h1,dv1,s,h2,dv2,s_):
         f = self.model(x)
         f = f.view(1,-1,4096)
+        h0, c = h0_c
         hidden = (h0.view(1,-1,self.h_dim),c.view(1,-1,self.h_dim))
         out,hidden = self.LSTM(f,hidden)
         h1,dv1,s = self.dLSTM(out,h1,dv1,s)

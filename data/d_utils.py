@@ -101,8 +101,8 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
                     ims = np.broadcast_to(ims, (3,) + ims.shape)
 
                     log_specgrams.append(ims)
-                    labels.append(label)
 
+            labels.append(label)
             window_features.append(log_specgrams)
 
     return np.array(window_features), np.array(labels, dtype=np.int)
