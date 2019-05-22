@@ -23,8 +23,8 @@ assert os.path.exists(IMAGE_DIR), 'Invalid image directory'
 
 DEBUG = True # Flag for quick development
 
-def get_dataloader(batch_size, fold=[1], input_size=224, save=False,
-    shuffle=True, num_workers=0):
+def get_dataloader(batch_size, fold=[1], window_size=, input_size=224,
+                   save=False, shuffle=True, num_workers=0):
     dataset = UrbanSoundDataset(fold,
                                 parent_dir=IMAGE_DIR,
                                 input_size=input_size,
@@ -91,12 +91,14 @@ if __name__ == '__main__':
     loader = get_dataloader(fold=fold, batch_size=batch_size)
 
     # Grab data at a single instance
-    img, label = next(iter(loader))
+    window, label = next(iter(loader))
 
     # Getting data from looped dataloader
-    for i, (img, label) in enumerate(loader):
-        img = img.numpy()
+    for i, (window, label) in enumerate(loader):
+
+        for ii in range()
+        window = window.numpy()
         lbl = label.numpy()
-        print(i, img.shape, img.min(), img.max(), img.dtype)
+        print(i, window.shape, window.min(), window.max(), window.dtype)
         print(i, lbl.shape, lbl.min(), lbl.max(), lbl.dtype)
         break

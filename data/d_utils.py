@@ -54,7 +54,7 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
     import glob
     import os
     window_size = 512 * (frames - 1)
-    log_specgrams = []
+    window_features = []
     labels = []
     for l, fold in enumerate(folds):
         files = glob.glob(os.path.join(parent_dir, fold, file_ext))
@@ -76,6 +76,7 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
             label = os.path.basename(fn).split('-')[1]
 
             # Window sound clip
+            log_specgrams = []
             for (start, end) in windows(sound_clip, window_size):
                 start, end = int(start), int(end)
                 if (len(sound_clip[start:end]) == window_size):
@@ -89,7 +90,9 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
                     log_specgrams.append(ims)
                     labels.append(label)
 
-    return np.array(log_specgrams), np.array(labels, dtype=np.int)
+            window_features.append(log_specgrams)
+
+    return np.array(window_features), np.array(labels, dtype=np.int)
 
 def stretch_sound(sound, length):
     import math
