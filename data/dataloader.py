@@ -13,7 +13,7 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
 # Project level imports
-from data.d_utils import extract_features
+from d_utils import extract_features
 
 # Module level constants
 root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound'
