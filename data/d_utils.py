@@ -49,28 +49,28 @@ def windows(data, window_size):
         yield start, start + window_size
         start += (window_size / 2)
 
-def extract_features(parent_dir, sub_dirs, file_ext="*.wav", bands=60,
+def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
                      frames=41, print_freq=10):
     import glob
     import os
     window_size = 512 * (frames - 1)
     log_specgrams = []
     labels = []
-    for l, sub_dir in enumerate(sub_dirs):
-        files = glob.glob(os.path.join(parent_dir, sub_dir, file_ext))
+    for l, fold in enumerate(folds):
+        files = glob.glob(os.path.join(parent_dir, fold, file_ext))
         for i, fn in enumerate(files):
             # Read in file
             # samplerate, sound_clip = wav.read(fn)
             if i % print_freq == 0:
-                print('{}: {}/{}'.format(sub_dir, i, len(files)))
+                print('{}: {}/{}'.format(fold, i, len(files)))
 
             # Get file
             sound_clip, samplerate = librosa.load(fn)
             length = librosa.get_duration(sound_clip)
 
             # Stretch sound
-            if (length < 4.0):
-                sound_clip = stretch_sound(sound_clip, length)
+            # if (length < 4.0):
+            #     sound_clip = stretch_sound(sound_clip, length)
 
             # Get label
             label = os.path.basename(fn).split('-')[1]
