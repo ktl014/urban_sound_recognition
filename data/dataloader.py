@@ -7,6 +7,7 @@ import librosa
 import cv2
 import numpy as np
 import pandas as pd
+import scipy.io.wavfile as wav
 import torch
 import torch.utils.data as data
 from torch.utils.data import Dataset
@@ -21,13 +22,16 @@ META_CSV = os.path.join(root_dir, 'dataset/UrbanSound8K/metadata/UrbanSound8K.cs
 IMAGE_DIR = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
 assert os.path.exists(IMAGE_DIR), 'Invalid image directory'
 
-DEBUG = True # Flag for quick development
+DEBUG = False # Flag for quick development
+WINDOW_SIZE = 2**10
+INPUT_SIZE = 224
 
-def get_dataloader(batch_size, fold=[1], input_size=224, save=False,
-    shuffle=True, num_workers=0):
+def get_dataloader(batch_size, fold=1, window_size=WINDOW_SIZE,
+                   input_size=INPUT_SIZE, shuffle=True, num_workers=0, save=False):
     dataset = UrbanSoundDataset(fold,
                                 parent_dir=IMAGE_DIR,
                                 input_size=input_size,
+                                window_size=window_size,
                                 save=save)
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                 shuffle=shuffle, num_workers=num_workers,
@@ -36,16 +40,18 @@ def get_dataloader(batch_size, fold=[1], input_size=224, save=False,
 
 class UrbanSoundDataset(Dataset):
     """Custom dataset class for UrbanSound8K dataset"""
-    def __init__(self, fold=1, parent_dir=IMAGE_DIR, input_size=224,
-                 save=False):
+    def __init__(self, fold=1, window_size=WINDOW_SIZE, input_size=INPUT_SIZE,
+                 parent_dir=IMAGE_DIR, save=False):
         assert isinstance(fold, list) and list
 
-        # Initialize
+        # Initialize attributes
         self.fold = fold
         self.input_size = input_size
+        self.window_size = window_size
 
         fold_id = ''.join([str(i) for i in self.fold])
         if DEBUG:
+            #TODO make smarter flag for checking if preprocessed features exist
             self.features = np.load(os.path.join(
                 root_dir, 'data/fold{}_features.npy'.format(fold_id)))
             self.labels = np.load(os.path.join(
@@ -58,7 +64,8 @@ class UrbanSoundDataset(Dataset):
                                                           bands=60,
                                                           frames=41)
             if save:
-                outfile = os.path.join(root_dir, 'data/fold{}_{}.npy')
+                print('Saving files')
+                outfile = os.path.join(root_dir, 'data/folds/fold{}_{}.npy')
                 np.save(outfile.format(fold_id, 'features'), self.features)
                 np.save(outfile.format(fold_id, 'labels'), self.labels)
 
@@ -70,10 +77,7 @@ class UrbanSoundDataset(Dataset):
         return self.total_samples
 
     def __getitem__(self, index):
-        # < TEMP: cv2 > couldn't resize using pytorch's resize bc not image
-        img = cv2.resize(self.features[index], dsize=(self.input_size,
-                                                      self.input_size))
-        return img, self.labels[index]
+        return self.features[index], self.labels[index]
 
 if __name__ == '__main__':
     """Example for implementing dataloader in train and evaluation
@@ -88,15 +92,19 @@ if __name__ == '__main__':
     fold = [3]
 
     # Initialize dataloader
-    loader = get_dataloader(fold=fold, batch_size=batch_size)
+    loader = get_dataloader(fold=fold, batch_size=batch_size, save=True)
 
+    """Uncomment when debugging the dataloader"""
     # Grab data at a single instance
-    img, label = next(iter(loader))
-
-    # Getting data from looped dataloader
-    for i, (img, label) in enumerate(loader):
-        img = img.numpy()
-        lbl = label.numpy()
-        print(i, img.shape, img.min(), img.max(), img.dtype)
-        print(i, lbl.shape, lbl.min(), lbl.max(), lbl.dtype)
-        break
+    # window, label = next(iter(loader))
+    #
+    # # Getting data from looped dataloader
+    # for i, (window, label) in enumerate(loader):
+    #
+    #     for ii in range(window):
+    #         img = window.numpy()[:, i, :, :, :]
+    #         lbl = label.numpy()
+    #         print(ii, window.shape, window.min(), window.max(), window.dtype)
+    #         print(ii, img.shape, img.min(), img.max(), img.dtype)
+    #         print(ii, lbl.shape, lbl.min(), lbl.max(), lbl.dtype)
+    #         break

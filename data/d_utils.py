@@ -2,6 +2,7 @@
 # Standard dist imports
 
 # Third party imports
+import cv2
 import librosa
 
 import scipy.io.wavfile as wav
@@ -15,12 +16,10 @@ from torch.autograd import Variable
 
 # Module level constants
 
-def load_sound_files(file_paths):
-    raw_sounds = []
-    for fp in file_paths:
-        X,sr = librosa.load(fp)
-        raw_sounds.append(X)
-    return raw_sounds
+def load_sound_file(file_path):
+    samplerate, sound_clip = wav.read(file_path)
+    return samplerate, sound_clip
+
 
 def to_cuda(item, computing_device, label=False):
     """ Typecast item to cuda()
@@ -54,21 +53,29 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
     import glob
     import os
     window_size = 512 * (frames - 1)
-    log_specgrams = []
+    window_features = []
     labels = []
+    bad_count = 0
     for l, fold in enumerate(folds):
         files = glob.glob(os.path.join(parent_dir, fold, file_ext))
         for i, fn in enumerate(files):
             # Read in file
-            # samplerate, sound_clip = wav.read(fn)
+            try:
+                # samplerate, sound_clip = wav.read(fn)
+                sound_clip, samplerate = librosa.load(fn)
+
+            except:
+                bad_count += 1
+                print("BAD AUDIO INPUT!! fn:{} {}".format(os.path.basename(
+                    fn), bad_count))
+                continue
+
             if i % print_freq == 0:
                 print('{}: {}/{}'.format(fold, i, len(files)))
 
-            # Get file
-            sound_clip, samplerate = librosa.load(fn)
-            length = librosa.get_duration(sound_clip)
 
             # Stretch sound
+            # length = librosa.get_duration(sound_clip)
             # if (length < 4.0):
             #     sound_clip = stretch_sound(sound_clip, length)
 
@@ -76,6 +83,7 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
             label = os.path.basename(fn).split('-')[1]
 
             # Window sound clip
+            log_specgrams = []
             for (start, end) in windows(sound_clip, window_size):
                 start, end = int(start), int(end)
                 if (len(sound_clip[start:end]) == window_size):
@@ -86,10 +94,18 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
                     sshow, freq = logscale_spec(s, factor=1.0, sr=samplerate)
                     ims = 20. * np.log10(np.abs(sshow) / 10e-6)
 
+                    # Resize
+                    ims = cv2.resize(ims, dsize=(224, 224))
+
+                    # Stack grayscale into three channels for CNN
+                    ims = np.broadcast_to(ims, (3,) + ims.shape)
+
                     log_specgrams.append(ims)
                     labels.append(label)
 
-    return np.array(log_specgrams), np.array(labels, dtype=np.int)
+            window_features.append(log_specgrams)
+
+    return np.array(window_features), np.array(labels, dtype=np.int)
 
 def stretch_sound(sound, length):
     import math
