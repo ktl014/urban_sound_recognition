@@ -48,7 +48,7 @@ def windows(data, window_size):
         yield start, start + window_size
         start += (window_size / 2)
 
-def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
+def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
                      frames=41, print_freq=10):
     import glob
     import os
@@ -57,7 +57,7 @@ def extract_features(parent_dir, folds, file_ext="*.wav", bands=60,
     labels = []
     bad_count = 0
     for l, fold in enumerate(folds):
-        files = glob.glob(os.path.join(parent_dir, fold, file_ext))
+        files = glob.glob(os.path.join(image_dir, fold, file_ext))
         for i, fn in enumerate(files):
             # Read in file
             try:

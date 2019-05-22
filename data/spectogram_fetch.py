@@ -87,8 +87,12 @@ def plotstft(audiopath, binsize=2**10, plotpath=None, colormap="jet"):
         
     plt.clf()
 
-path = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound_recognition/dataset/UrbanSound8K/audio/fold1/7061-6-0-0.wav'
-plotstft(path)
+path = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: ' \
+       'Physical Applications/urban_sound/dataset/UrbanSound8K/audio/fold3/54067-2-0-71.wav'
+plotstft(path, binsize=1024)
+plotstft(path, binsize=512)
+plotstft(path, binsize=256)
+plotstft(path, binsize=112)
 
 
 

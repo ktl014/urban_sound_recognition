@@ -26,12 +26,14 @@ DEBUG = True # Flag for quick development
 WINDOW_SIZE = 2**10
 INPUT_SIZE = 224
 
-def get_dataloader(batch_size, fold=1, window_size=WINDOW_SIZE,
+def get_dataloader(batch_size, fold=1, db_prepped=False,
+                   window_size=WINDOW_SIZE, image_dir=IMAGE_DIR,
                    input_size=INPUT_SIZE, shuffle=True, num_workers=0, save=False):
     dataset = UrbanSoundDataset(fold,
-                                parent_dir=IMAGE_DIR,
+                                image_dir=IMAGE_DIR,
                                 input_size=input_size,
                                 window_size=window_size,
+                                db_prepped=db_prepped,
                                 save=save)
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                 shuffle=shuffle, num_workers=num_workers,
@@ -40,8 +42,9 @@ def get_dataloader(batch_size, fold=1, window_size=WINDOW_SIZE,
 
 class UrbanSoundDataset(Dataset):
     """Custom dataset class for UrbanSound8K dataset"""
-    def __init__(self, fold=1, window_size=WINDOW_SIZE, input_size=INPUT_SIZE,
-                 parent_dir=IMAGE_DIR, save=False):
+    def __init__(self, fold=1, db_prepped=False,
+                 window_size=WINDOW_SIZE, input_size=INPUT_SIZE,
+                 image_dir=IMAGE_DIR, save=False):
         assert isinstance(fold, list) and list
 
         # Initialize attributes
@@ -50,7 +53,7 @@ class UrbanSoundDataset(Dataset):
         self.window_size = window_size
 
         fold_id = ''.join([str(i) for i in self.fold])
-        if DEBUG:
+        if db_prepped:
             #TODO make smarter flag for checking if preprocessed features exist
             print('Loading {}'.format(self.fold))
             self.features = np.load(os.path.join(
@@ -62,7 +65,7 @@ class UrbanSoundDataset(Dataset):
         else:
             # Extracts features for all folds
             fold_str = ['fold{}'.format(i) for i in self.fold]
-            self.features, self.labels = extract_features(parent_dir=parent_dir,
+            self.features, self.labels = extract_features(image_dir=image_dir,
                                                           folds=fold_str,
                                                           bands=60,
                                                           frames=41)
