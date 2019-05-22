@@ -4,6 +4,7 @@ data/.DS_Store
 data/fold1_features.npy
 data/fold1_labels.npy
 data/Icon?
+data/folds/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
