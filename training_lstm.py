@@ -30,10 +30,14 @@ from data.dataloader import get_dataloader
 parser = argparse.ArgumentParser(description='PyTorch Training')
 
 parser.add_argument('-e', '--epochs', action='store', default=20, type=int, help='epochs (default: 20)')
-parser.add_argument('--batchSize', action='store', default=1, type=int, help='batch size (default: 128)')
+parser.add_argument('--batchSize', action='store', default=1, type=int, help='batch size (default: 1)')
 parser.add_argument('--windowSize', action='store', default=25, type=int, help='number of frames (default: 25)')
 parser.add_argument('--h_dim', action='store', default=256, type=int, help='LSTM hidden layer dimension (default: 256)')
-parser.add_argument('--lr','--learning-rate',action='store',default=0.01, type=float,help='learning rate (default: 0.01)')
+parser.add_argument('--lr','--learning-rate',action='store',default=0.01, type=float,help='learning rate (default: '
+                                                                                          '0.01)')
+parser.add_argument('--train_fold',action='store',default=0, type=int,help='Training Fold (default: 0)')
+parser.add_argument('--test_fold',action='store',default=0, type=int,help='Testing Fold (default: 0)')
+
 parser.add_argument('--train_f', action='store_false', default=True, help='Flag to train (STORE_FALSE)(default: True)')
 parser.add_argument('--useGPU_f', action='store_false', default=True, help='Flag to use GPU (STORE_FALSE)(default: True)')
 parser.add_argument('--gpu_num', action='store', default=0, type=int, help='gpu_num (default: 0)')
@@ -72,8 +76,8 @@ def main():
     #test_path = root_dir+'/test'
     num_of_classes=10
     
-    trainLoader = get_dataloader(fold=[1], batch_size=1, shuffle=True)
-    testLoader =  get_dataloader(fold=[3], batch_size=1, shuffle=True)
+    trainLoader = get_dataloader(fold=[arg.train_fold], batch_size=1, shuffle=True, db_prepped=True)
+    testLoader =  get_dataloader(fold=[arg.test_fold], batch_size=1, shuffle=True, db_prepped=True)
     trainSize = len(trainLoader)
     testSize =  len(testLoader)
     

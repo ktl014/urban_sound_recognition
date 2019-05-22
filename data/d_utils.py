@@ -4,6 +4,7 @@
 # Third party imports
 import cv2
 import librosa
+import random
 
 import scipy.io.wavfile as wav
 from numpy.lib import stride_tricks
@@ -15,6 +16,7 @@ from torch.autograd import Variable
 # Project level imports
 
 # Module level constants
+QUICK_DEV = False
 
 def load_sound_file(file_path):
     samplerate, sound_clip = wav.read(file_path)
@@ -58,6 +60,9 @@ def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
     bad_count = 0
     for l, fold in enumerate(folds):
         files = glob.glob(os.path.join(image_dir, fold, file_ext))
+        if QUICK_DEV:
+            files = random.sample(files, 200)
+
         for i, fn in enumerate(files):
             # Read in file
             try:
