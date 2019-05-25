@@ -17,20 +17,15 @@ import torchvision.transforms as transforms
 from data.d_utils import extract_features
 
 # Module level constants
-root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound'
-META_CSV = os.path.join(root_dir, 'dataset/UrbanSound8K/metadata/UrbanSound8K.csv')
-IMAGE_DIR = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
-assert os.path.exists(IMAGE_DIR), 'Invalid image directory'
-
 DEBUG = True # Flag for quick development
 WINDOW_SIZE = 2**10
 INPUT_SIZE = 224
 
 def get_dataloader(batch_size, fold=1, db_prepped=False,
-                   window_size=WINDOW_SIZE, image_dir=IMAGE_DIR,
+                   window_size=WINDOW_SIZE, root_dir=None,
                    input_size=INPUT_SIZE, shuffle=True, num_workers=0, save=False):
     dataset = UrbanSoundDataset(fold,
-                                image_dir=IMAGE_DIR,
+                                root_dir=root_dir,
                                 input_size=input_size,
                                 window_size=window_size,
                                 db_prepped=db_prepped,
@@ -44,7 +39,7 @@ class UrbanSoundDataset(Dataset):
     """Custom dataset class for UrbanSound8K dataset"""
     def __init__(self, fold=1, db_prepped=False,
                  window_size=WINDOW_SIZE, input_size=INPUT_SIZE,
-                 image_dir=IMAGE_DIR, save=False):
+                 root_dir=None, save=False):
         assert isinstance(fold, list) and list
 
         # Initialize attributes
@@ -65,7 +60,8 @@ class UrbanSoundDataset(Dataset):
         else:
             # Extracts features for all folds
             fold_str = ['fold{}'.format(i) for i in self.fold]
-            self.features, self.labels = extract_features(image_dir=image_dir,
+            image_dir = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
+            self.features, self.labels = extract_features(image_dir=root_dir,
                                                           folds=fold_str,
                                                           bands=60,
                                                           frames=41)
@@ -98,7 +94,8 @@ if __name__ == '__main__':
     fold = [1]
 
     # Initialize dataloader
-    loader = get_dataloader(fold=fold, batch_size=batch_size, save=True)
+    loader = get_dataloader(fold=fold, batch_size=batch_size,
+                            db_prepped=True, root_dir=os.path.dirname(os.getcwd()))
 
     """Uncomment when debugging the dataloader"""
     # Grab data at a single instance

@@ -22,11 +22,10 @@ parser.add_argument('--save', action='store_false', default=True,
                     help='Flag to save (STORE_FALSE)(default: True)')
 
 arg = parser.parse_args()
-IMAGE_DIR = os.path.join(arg.root_dir, 'dataset/UrbanSound8K/audio')
 if not os.path.exists(os.path.join(arg.root_dir, 'data/folds')):
     os.makedirs(os.path.join(arg.root_dir, 'data/folds'))
 print('Preparing dataset for fold {}'.format(arg.fold))
 since = time.time()
-loader = get_dataloader(fold=[arg.fold], image_dir=IMAGE_DIR, db_prepped=False,
-                             batch_size=1, shuffle=True, save=arg.save)
+loader = get_dataloader(fold=[arg.fold], root_dir=arg.root_dir, db_prepped=False,
+                        batch_size=1, shuffle=True, save=arg.save)
 print('Completed! Time: {}'.format(time.time() - since))
