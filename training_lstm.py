@@ -144,7 +144,7 @@ def main():
             train_acc = 100.0*train_acc.data.cpu().numpy()/arg.batchSize
             #print('train acc', train_acc, 'train loss', loss.data.cpu())
 
-            if batchIdx%50==0:
+            if batchIdx%10==0:
                 logger.info("epochs:{}, train loss:{}, train acc:{}".format(epoch, loss.data.cpu(), train_acc))
         
         ########################

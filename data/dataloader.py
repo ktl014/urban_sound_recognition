@@ -7,6 +7,7 @@ import librosa
 import cv2
 import numpy as np
 import pandas as pd
+import pickle
 import scipy.io.wavfile as wav
 import torch
 import torch.utils.data as data
@@ -17,24 +18,19 @@ import torchvision.transforms as transforms
 from data.d_utils import extract_features
 
 # Module level constants
-root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound'
-META_CSV = os.path.join(root_dir, 'dataset/UrbanSound8K/metadata/UrbanSound8K.csv')
-IMAGE_DIR = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
-assert os.path.exists(IMAGE_DIR), 'Invalid image directory'
-
 DEBUG = True # Flag for quick development
 WINDOW_SIZE = 2**10
 INPUT_SIZE = 224
 
 def get_dataloader(batch_size, fold=1, db_prepped=False,
-                   window_size=WINDOW_SIZE, image_dir=IMAGE_DIR,
-                   input_size=INPUT_SIZE, shuffle=True, num_workers=0, save=False):
+                   window_size=WINDOW_SIZE, root_dir=None,
+                   input_size=INPUT_SIZE, shuffle=True, num_workers=0, save=False, quick_dev=False):
     dataset = UrbanSoundDataset(fold,
-                                image_dir=IMAGE_DIR,
+                                root_dir=root_dir,
                                 input_size=input_size,
                                 window_size=window_size,
                                 db_prepped=db_prepped,
-                                save=save)
+                                save=save, quick_dev=quick_dev)
     loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size,
                                 shuffle=shuffle, num_workers=num_workers,
                                 pin_memory=True)
@@ -44,7 +40,7 @@ class UrbanSoundDataset(Dataset):
     """Custom dataset class for UrbanSound8K dataset"""
     def __init__(self, fold=1, db_prepped=False,
                  window_size=WINDOW_SIZE, input_size=INPUT_SIZE,
-                 image_dir=IMAGE_DIR, save=False):
+                 root_dir=None, save=False, quick_dev=False):
         assert isinstance(fold, list) and list
 
         # Initialize attributes
@@ -56,24 +52,24 @@ class UrbanSoundDataset(Dataset):
         if db_prepped:
             #TODO make smarter flag for checking if preprocessed features exist
             print('Loading {}'.format(self.fold))
-            self.features = np.load(os.path.join(
-                root_dir, 'data/folds/fold{}_features.npy'.format(fold_id)),
-            allow_pickle=True)
-            self.labels = np.load(os.path.join(
-                root_dir, 'data/folds/fold{}_labels.npy'.format(fold_id)),
-                allow_pickle=True)
+            
+            self.features = pickle.load(open(os.path.join(
+                root_dir, 'data/folds/fold{}_features.p'.format(fold_id)), 'rb'))
+            self.labels = pickle.load(open(os.path.join(
+                root_dir, 'data/folds/fold{}_labels.p'.format(fold_id)), 'rb'))
         else:
             # Extracts features for all folds
             fold_str = ['fold{}'.format(i) for i in self.fold]
+            image_dir = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
             self.features, self.labels = extract_features(image_dir=image_dir,
                                                           folds=fold_str,
                                                           bands=60,
-                                                          frames=41)
+                                                          frames=41, quick_dev=quick_dev)
             if save:
                 print('Saving files')
-                outfile = os.path.join(root_dir, 'data/folds/fold{}_{}.npy')
-                np.save(outfile.format(fold_id, 'features'), self.features)
-                np.save(outfile.format(fold_id, 'labels'), self.labels)
+                outfile = os.path.join(root_dir, 'data/folds/fold{}_{}.p')
+                pickle.dump(self.features, open(outfile.format(fold_id, 'features'), 'wb'))
+                pickle.dump(self.labels, open(outfile.format(fold_id, 'labels'), 'wb'))
 
         self.total_samples = len(self.features)
 
@@ -98,7 +94,8 @@ if __name__ == '__main__':
     fold = [1]
 
     # Initialize dataloader
-    loader = get_dataloader(fold=fold, batch_size=batch_size, save=True)
+    loader = get_dataloader(fold=fold, batch_size=batch_size,
+                            db_prepped=True, root_dir=os.path.dirname(os.getcwd()))
 
     """Uncomment when debugging the dataloader"""
     # Grab data at a single instance

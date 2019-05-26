@@ -20,13 +20,28 @@ parser.add_argument('--fold', type=int, default=1,
                     help='Fold to preprocess (default:1)')
 parser.add_argument('--save', action='store_false', default=True,
                     help='Flag to save (STORE_FALSE)(default: True)')
+parser.add_argument('--quick_dev', action='store_true', default=False,
+                    help='Flag for quick development (STORE_FALSE)(default: True)')
+parser.add_argument('--debug', action='store_true', default=False,
+                    help='Flag to debug (STORE_FALSE)(default: True)')
 
 arg = parser.parse_args()
-IMAGE_DIR = os.path.join(arg.root_dir, 'dataset/UrbanSound8K/audio')
-if not os.path.exists(os.path.join(arg.root_dir, 'data/folds')):
-    os.makedirs(os.path.join(arg.root_dir, 'data/folds'))
-print('Preparing dataset for fold {}'.format(arg.fold))
 since = time.time()
-loader = get_dataloader(fold=[arg.fold], image_dir=IMAGE_DIR, db_prepped=False,
-                             batch_size=1, shuffle=True, save=arg.save)
+if not arg.debug:
+    if not os.path.exists(os.path.join(arg.root_dir, 'data/folds')):
+        os.makedirs(os.path.join(arg.root_dir, 'data/folds'))
+    print('Preparing dataset for fold {}'.format(arg.fold))
+    loader = get_dataloader(fold=[arg.fold], root_dir=arg.root_dir, db_prepped=False,
+                            batch_size=1, shuffle=True, save=arg.save, quick_dev=arg.quick_dev)
+else:
+    print('Testing dataloader for fold {}'.format(arg.fold))
+    loader = get_dataloader(fold=[arg.fold], root_dir=arg.root_dir, db_prepped=True,
+                            batch_size=1, shuffle=True, save=arg.save, quick_dev=arg.quick_dev)
+    window, label = next(iter(loader))
+    for ii in range(len(window)):
+            img = window.numpy()[:, ii, :, :, :]
+            lbl = label.numpy()
+            print(ii, window.shape, window.min(), window.max(), window.dtype)
+            print(ii, img.shape, img.min(), img.max(), img.dtype)
+            print(ii, lbl.shape, lbl.min(), lbl.max(), lbl.dtype)  
 print('Completed! Time: {}'.format(time.time() - since))
