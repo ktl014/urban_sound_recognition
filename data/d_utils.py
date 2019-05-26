@@ -16,7 +16,6 @@ from torch.autograd import Variable
 # Project level imports
 
 # Module level constants
-QUICK_DEV = False
 
 def load_sound_file(file_path):
     samplerate, sound_clip = wav.read(file_path)
@@ -51,7 +50,7 @@ def windows(data, window_size):
         start += (window_size / 2)
 
 def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
-                     frames=41, print_freq=10):
+                     frames=41, print_freq=10, quick_dev=False):
     import glob
     import os
     window_size = 512 * (frames - 1)
@@ -60,7 +59,7 @@ def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
     bad_count = 0
     for l, fold in enumerate(folds):
         files = glob.glob(os.path.join(image_dir, fold, file_ext))
-        if QUICK_DEV:
+        if quick_dev:
             files = random.sample(files, 200)
 
         for i, fn in enumerate(files):
