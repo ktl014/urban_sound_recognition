@@ -24,7 +24,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 
-from model_vgglstm import VGG,AlexNet
+from model.model_vgglstm import VGG,AlexNet
 from data.dataloader import get_dataloader
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
@@ -35,8 +35,8 @@ parser.add_argument('--windowSize', action='store', default=25, type=int, help='
 parser.add_argument('--h_dim', action='store', default=256, type=int, help='LSTM hidden layer dimension (default: 256)')
 parser.add_argument('--lr','--learning-rate',action='store',default=0.01, type=float,help='learning rate (default: '
                                                                                           '0.01)')
-parser.add_argument('--train_fold',action='store',default=0, type=int,help='Training Fold (default: 0)')
-parser.add_argument('--test_fold',action='store',default=0, type=int,help='Testing Fold (default: 0)')
+parser.add_argument('--train_fold',action='store',default=1, type=int,help='Training Fold (default: 0)')
+parser.add_argument('--test_fold',action='store',default=1, type=int,help='Testing Fold (default: 0)')
 
 parser.add_argument('--train_f', action='store_false', default=True, help='Flag to train (STORE_FALSE)(default: True)')
 parser.add_argument('--useGPU_f', action='store_false', default=True, help='Flag to use GPU (STORE_FALSE)(default: True)')
@@ -100,8 +100,8 @@ def main():
         hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False),
                    Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False))
     else:
-        hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=False),
-                   Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=False))
+        hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=True),
+                   Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=True))
      
     min_acc=0.0
     ##########################

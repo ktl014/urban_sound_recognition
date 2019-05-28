@@ -53,21 +53,19 @@ class UrbanSoundDataset(Dataset):
             #TODO make smarter flag for checking if preprocessed features exist
             print('Loading {}'.format(self.fold))
             
-            self.features = pickle.load(open(os.path.join(
-                root_dir, 'data/folds/fold{}_features.p'.format(fold_id)), 'rb'))
-            self.labels = pickle.load(open(os.path.join(
-                root_dir, 'data/folds/fold{}_labels.p'.format(fold_id)), 'rb'))
+            self.features = pickle.load(open(os.path.join('data/folds/fold{}_features.p'.format(fold_id)), 'rb'))
+            self.labels = pickle.load(open(os.path.join('data/folds/fold{}_labels.p'.format(fold_id)), 'rb'))
         else:
             # Extracts features for all folds
             fold_str = ['fold{}'.format(i) for i in self.fold]
-            image_dir = os.path.join(root_dir, 'dataset/UrbanSound8K/audio')
+            image_dir = os.path.join('dataset/UrbanSound8K/audio')
             self.features, self.labels = extract_features(image_dir=image_dir,
                                                           folds=fold_str,
                                                           bands=60,
                                                           frames=41, quick_dev=quick_dev)
             if save:
                 print('Saving files')
-                outfile = os.path.join(root_dir, 'data/folds/fold{}_{}.p')
+                outfile = os.path.join('data/folds/fold{}_{}.p')
                 pickle.dump(self.features, open(outfile.format(fold_id, 'features'), 'wb'))
                 pickle.dump(self.labels, open(outfile.format(fold_id, 'labels'), 'wb'))
 
