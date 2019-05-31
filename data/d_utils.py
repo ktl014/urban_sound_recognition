@@ -50,13 +50,21 @@ def windows(data, window_size):
         start += (window_size / 2)
 
 def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
-                     frames=41, print_freq=10, quick_dev=False):
+                     frames=41, print_freq=10, quick_dev=False, ):
     import glob
     import os
     window_size = 512 * (frames - 1)
     window_features = []
     labels = []
     bad_count = 0
+
+    n_fft = 1024
+    hop_length = 256
+    n_mels = 40
+    f_min = 0
+    f_max = 8000
+    s_r = 16000
+
     for l, fold in enumerate(folds):
         files = glob.glob(os.path.join(image_dir, fold, file_ext))
         if quick_dev:
@@ -66,7 +74,7 @@ def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
             # Read in file
             try:
                 # samplerate, sound_clip = wav.read(fn)
-                sound_clip, samplerate = librosa.load(fn)
+                sound_clip, samplerate = librosa.load(fn, sr=s_r)
 
             except:
                 bad_count += 1
@@ -94,9 +102,8 @@ def extract_features(image_dir, folds, file_ext="*.wav", bands=60,
                     signal = sound_clip[start:end]
 
                     # Spectrogram processing
-                    s = stft(signal, 2**10)
-                    sshow, freq = logscale_spec(s, factor=1.0, sr=samplerate)
-                    ims = 20. * np.log10(np.abs(sshow) / 10e-6)
+                    ims = librosa.feature.melspectrogram(y=signal, sr=s_r, n_fft=n_fft, hop_length=hop_length,
+                                                         power=1.0, n_mels=n_mels,fmin=f_min,fmax=f_max)
 
                     # Resize
                     ims = cv2.resize(ims, dsize=(224, 224))
