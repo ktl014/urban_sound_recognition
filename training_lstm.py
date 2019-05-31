@@ -75,7 +75,7 @@ def main():
     logger.info("Window Size: {}".format(arg.windowSize))
     logger.info("Hidden Layer Dimension: {}".format(arg.h_dim))
     logger.info("GPU num: {}".format(arg.gpu_num))
-    
+    logger.info('Model Type: {}'.format(arg.model))
     #root_dir = 'UCF11_split'
     #train_path = root_dir+'/train'
     #test_path = root_dir+'/test'

@@ -5,6 +5,7 @@ data/fold1_features.npy
 data/fold1_labels.npy
 data/Icon?
 data/folds/*
+Loading_sound_to_melspectrograms.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

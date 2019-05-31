@@ -23,10 +23,9 @@ WINDOW_SIZE = 2**10
 INPUT_SIZE = 224
 
 def get_dataloader(batch_size, fold=1, db_prepped=False,
-                   window_size=WINDOW_SIZE, root_dir=None,
+                   window_size=WINDOW_SIZE,
                    input_size=INPUT_SIZE, shuffle=True, num_workers=0, save=False, quick_dev=False):
     dataset = UrbanSoundDataset(fold,
-                                root_dir=root_dir,
                                 input_size=input_size,
                                 window_size=window_size,
                                 db_prepped=db_prepped,
@@ -40,7 +39,7 @@ class UrbanSoundDataset(Dataset):
     """Custom dataset class for UrbanSound8K dataset"""
     def __init__(self, fold=1, db_prepped=False,
                  window_size=WINDOW_SIZE, input_size=INPUT_SIZE,
-                 root_dir=None, save=False, quick_dev=False):
+                 save=False, quick_dev=False):
         assert isinstance(fold, list) and list
 
         # Initialize attributes
