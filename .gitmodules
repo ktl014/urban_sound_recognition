@@ -1,0 +1,4 @@
+[submodule "Urban-Sound-Classification"]
+	path = Urban-Sound-Classification
+	url = https://github.com/BenjaminDoran/Urban-Sound-Classification.git
+	branch = master

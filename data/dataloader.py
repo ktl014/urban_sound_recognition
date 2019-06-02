@@ -14,13 +14,36 @@ import torch.utils.data as data
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
+from sklearn.preprocessing import LabelBinarizer
+
 # Project level imports
 from data.d_utils import extract_features
 
 # Module level constants
-DEBUG = True # Flag for quick development
+DEBUG = False # Flag for quick development
 WINDOW_SIZE = 2**10
 INPUT_SIZE = 224
+DATA_FNAME = 'data/193_features.p'
+
+def get_dataloader_v2(db_prepped=False, traintest_split=6984):
+    if db_prepped:
+        data = pickle.load(open(DATA_FNAME, "rb"))
+        print(f'Data loaded: {type(data)}, {data.shape}, {data.columns}' if DEBUG else "") 
+        
+        # Get extracted features and labels (i.e. filter out irrelevant data points)
+        samples = pd.DataFrame(list(data['sample']))
+        data_cols = samples.columns
+        samples['label'] = data['label']
+        
+        # Train test split
+        train = samples[:traintest_split]
+        test = samples[traintest_split:]
+        print(f'Train: {train.shape} | Test: {test.shape}')
+        
+        # Initialize one hot encoder
+        LB = LabelBinarizer().fit(train['label'])
+
+        return train, test, LB, data_cols
 
 def get_dataloader(batch_size, fold=1, db_prepped=False,
                    window_size=WINDOW_SIZE,
