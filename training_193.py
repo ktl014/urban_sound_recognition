@@ -1,9 +1,24 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 21 06:16:09 2019
 
 @author: kevin
+
+Overall code organization:
+main()
+- gets data from `get_dataloader_v2()` in `data/dataloader.py`
+>> Data is loaded from the pickle file generated from the `extract 193 features`
+
+- initializes tensorflow graph
+>> within this graph comes the initialization of the following:
+    placeholder variables (e.g. tf_data, tf_labels)
+    the model (e.g. CNN, RNN, DNN)
+    loss computation
+    optimizer
+    prediction
+
+You can modify the model in `model/model_tf.py`. Review that script for more detail
+
 """
 import os
 import sys
@@ -25,8 +40,8 @@ from utils.eval_utils import test_accuracy, accuracy, init_feed_dict
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
 
-parser.add_argument('-e', '--epochs', action='store', default=20, type=int, help='epochs (default: 20)')
-parser.add_argument('--batchSize', action='store', default=1, type=int, help='batch size (default: 1)')
+parser.add_argument('-e', '--epochs', action='store', default=20000, type=int, help='epochs (default: 20)')
+parser.add_argument('--batchSize', action='store', default=97, type=int, help='batch size (default: 1)')
 parser.add_argument('--windowSize', action='store', default=25, type=int, help='number of frames (default: 25)')
 parser.add_argument('--h_dim', action='store', default=256, type=int, help='LSTM hidden layer dimension (default: 256)')
 parser.add_argument('--lr','--learning-rate',action='store',default=0.01, type=float,help='learning rate (default: '
@@ -70,9 +85,7 @@ def main():
     logger.info('Model Type: {}'.format(arg.model))
 
     num_of_classes=10
-    
     feature_size = 193
-    batch_size = 97
     beta = 0.01
 
     # Grab data
@@ -82,23 +95,23 @@ def main():
     graph = tf.Graph()
     with graph.as_default():
         tf_data = tf.placeholder(tf.float32, shape=[None, feature_size], name='data')
-        train_labels = tf.placeholder(tf.float32, shape=[None, num_of_classes], name='label')
+        tf_labels = tf.placeholder(tf.float32, shape=[None, num_of_classes], name='label')
         keep_prob = tf.placeholder(tf.float32, name='prob')
 
         # Select Model
         if arg.model == 'CNN':
-            model = CNN(batch_size=batch_size, feature_size=feature_size,
-                        num_labels=num_of_classes, patch_size=5, num_channels=1,
+            model = CNN(feature_size=feature_size, num_of_classes=num_of_classes,
+                        patch_size=5, num_channels=1,
                         depth1=32, num_hidden=1050)
 
         # Training computation
         logits = model.forward(data=tf.expand_dims(tf.expand_dims(tf_data, [-1]), 1), proba=keep_prob)
         model_params = [beta*tf.nn.l2_loss(i) for i in model.params]
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=train_labels) +
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=tf_labels) +
                               sum(model_params))
 
         # Optimizer.
-        optimizer = tf.train.AdamOptimizer(1e-4).minimize(loss)
+        optimizer = tf.train.AdamOptimizer(learning_rate=1e-4).minimize(loss)
 
         # Predictions for the training, validation, and test data.
         prediction = tf.nn.softmax(logits)
@@ -113,11 +126,39 @@ def main():
     # Train and test model
     run_session(trainLoader, testLoader, lblEncoder, data_cols,
                 graph=graph, session_state=session_state,
-                num_epochs=20000, name=arg.model, k_prob=.2,
-                batch_size=batch_size)
+                num_epochs=arg.epochs, name=arg.model, k_prob=.2,
+                batch_size=arg.batch_size)
     
-def run_session(train, test, LB, data_cols, graph, session_state, num_epochs, name, batch_size,
+def run_session(train, test, LB, data_cols, graph, session_state,
+                num_epochs, name, batch_size,
                 k_prob=1.0, mute=False, record=False):
+    """Run tensorflow session
+
+    The session is essentially the training loop, that runs the graph that was initialized in the main.
+
+    Args:
+        train (pd.DataFrame): Training set
+        test (pd.DataFrame): Test set
+        LB (sklearn.LabelBinarizer): One hot label encoded
+        data_cols (pd.DataFrame.columns): Feature columns
+        graph: Tensorflow Graph
+        session_state (dict): Session state dictionary containing loss, optimizer, and prediction
+        num_epochs (int): Number of epochs
+        name (str): Model type
+        batch_size (int): Batch size
+        k_prob (float):
+        mute:
+        record:
+
+    Returns:
+        None
+
+    """
+    # Stats container
+    """Use this to access the accuracy and predictions, given the model_name
+    >> test_preds['RNN']
+    0.983
+    """
     acc_over_time = {}
     test_preds = {}
     
