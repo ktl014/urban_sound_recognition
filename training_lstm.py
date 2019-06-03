@@ -24,7 +24,8 @@ import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 
-from model_vgglstm import VGG,AlexNet
+from model.model_vgglstm import VGG,AlexNet
+from model.model_vggcnn import UrbanCNN
 from data.dataloader import get_dataloader
 
 parser = argparse.ArgumentParser(description='PyTorch Training')
@@ -35,18 +36,19 @@ parser.add_argument('--windowSize', action='store', default=25, type=int, help='
 parser.add_argument('--h_dim', action='store', default=256, type=int, help='LSTM hidden layer dimension (default: 256)')
 parser.add_argument('--lr','--learning-rate',action='store',default=0.01, type=float,help='learning rate (default: '
                                                                                           '0.01)')
-parser.add_argument('--train_fold',action='store',default=0, type=int,help='Training Fold (default: 0)')
-parser.add_argument('--test_fold',action='store',default=0, type=int,help='Testing Fold (default: 0)')
+parser.add_argument('--train_fold',action='store',default=1, type=int,help='Training Fold (default: 0)')
+parser.add_argument('--test_fold',action='store',default=1, type=int,help='Testing Fold (default: 0)')
 
 parser.add_argument('--train_f', action='store_false', default=True, help='Flag to train (STORE_FALSE)(default: True)')
 parser.add_argument('--useGPU_f', action='store_false', default=True, help='Flag to use GPU (STORE_FALSE)(default: True)')
 parser.add_argument('--gpu_num', action='store', default=0, type=int, help='gpu_num (default: 0)')
 parser.add_argument("--net", default='AlexNet', const='AlexNet',nargs='?', choices=['VGG', 'AlexNet'], help="net model(default:VGG)")
+parser.add_argument("--model", default='CNN', choices=['CNN', 'CRNN'], help="model type(default:CNN)")
 
 arg = parser.parse_args()
 
 def main():
-    if torch.cuda.is_available() and arg.useGPU_F:
+    if torch.cuda.is_available():
         torch.cuda.set_device(arg.gpu_num)
         torch.cuda.current_device()
     
@@ -54,7 +56,7 @@ def main():
         os.makedirs('model')
     if not os.path.exists('log'):
         os.makedirs('log')
-    model_path = 'model/model_LSTM'+str(arg.lr)+'_'+arg.net+'.pt'
+    model_path = 'model/model_{}'.format(arg.model)+str(arg.lr)+'_'+arg.net+'.pt'
     
     logger = logging.getLogger('netlog')
     logger.setLevel(logging.INFO)
@@ -73,7 +75,7 @@ def main():
     logger.info("Window Size: {}".format(arg.windowSize))
     logger.info("Hidden Layer Dimension: {}".format(arg.h_dim))
     logger.info("GPU num: {}".format(arg.gpu_num))
-    
+    logger.info('Model Type: {}'.format(arg.model))
     #root_dir = 'UCF11_split'
     #train_path = root_dir+'/train'
     #test_path = root_dir+'/test'
@@ -83,11 +85,14 @@ def main():
     testLoader =  get_dataloader(fold=[arg.test_fold], batch_size=1, shuffle=True, db_prepped=True)
     trainSize = len(trainLoader)
     testSize =  len(testLoader)
-    
-    if arg.net == 'VGG':
-        model = VGG(arg.h_dim, num_of_classes)
-    elif arg.net =='AlexNet':
-        model = AlexNet(arg.h_dim, num_of_classes)
+
+    if arg.model == 'CRNN':
+        if arg.net == 'VGG':
+            model = VGG(arg.h_dim, num_of_classes)
+        elif arg.net =='AlexNet':
+            model = AlexNet(arg.h_dim, num_of_classes)
+    else:
+        model = UrbanCNN(net=arg.net, num_of_classes=num_of_classes)
     
     if arg.useGPU_f:
         model.cuda()
@@ -100,8 +105,8 @@ def main():
         hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False),
                    Variable(torch.randn(1,arg.batchSize,arg.h_dim).cuda(),requires_grad=False))
     else:
-        hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=False),
-                   Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=False))
+        hidden = ( Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=True),
+                   Variable(torch.randn(1,arg.batchSize,arg.h_dim),requires_grad=True))
      
     min_acc=0.0
     ##########################
@@ -125,15 +130,18 @@ def main():
             windowSize = windowBatch.shape[1]
             for i in range(windowSize):
                 imgBatch = windowBatch[:,i,:,:,:]
-                temp,hidden = model(imgBatch,hidden)
-                (h,c) = hidden
-                hidden = (h.detach(), c.detach())
+                if arg.model == 'CRNN':
+                    temp,hidden = model(imgBatch,hidden)
+                    (h,c) = hidden
+                    hidden = (h.detach(), c.detach())
+                else:
+                    temp = model(imgBatch)
                 #loss_ = criterion(temp,labelBatch)
                 #loss+=loss_.data
                 y += temp
             
             Y=y/windowSize
-            #loss = Variable(loss.cuda(),requires_grad=True)
+            Y = Variable(Y, requires_grad=True)
             loss = criterion(Y,labelBatch)
             loss.backward()
             optimizer.step()
@@ -165,9 +173,12 @@ def main():
             windowSize = windowBatch.shape[1]
             for i in range(windowSize):
                 imgBatch = windowBatch[:,i,:,:,:]
-                temp,hidden = model(imgBatch,hidden)
-                (h,c) = hidden
-                hidden = (h.detach(), c.detach())
+                if arg.model == 'CRNN':
+                    temp,hidden = model(imgBatch,hidden)
+                    (h,c) = hidden
+                    hidden = (h.detach(), c.detach())
+                else:
+                    temp = model(imgBatch)
                 #loss_ = criterion(temp,labelBatch)
                 #loss+=loss_.data
                 y += temp
@@ -208,9 +219,12 @@ def main():
         windowSize = windowBatch.shape[1]
         for i in range(windowSize):
             imgBatch = windowBatch[:,i,:,:,:]
-            temp,hidden = model(imgBatch,hidden)
-            (h,c) = hidden
-            hidden = (h.detach(), c.detach())
+            if arg.model == 'CRNN':
+                temp, hidden = model(imgBatch, hidden)
+                (h, c) = hidden
+                hidden = (h.detach(), c.detach())
+            else:
+                temp = model(imgBatch)
             #loss_ = criterion(temp,labelBatch)
             #loss+=loss_.data
             y += temp
