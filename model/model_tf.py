@@ -61,3 +61,67 @@ class CNN(object):
         full2 = tf.nn.dropout(full2, proba) # (?, 1050)
 
         return tf.matmul(full2, self.layer3_weights) + self.layer3_biases # (?, 10)
+
+class DNN(object):
+    def __init__(self, feature_size=193, num_of_classes=10, **kwargs):
+        n_hidden1 = kwargs['n_hidden1'] # 400
+        n_hidden2 = kwargs['n_hidden2'] # 500
+        n_hidden3 = kwargs['n_hidden3'] # 400
+
+        # weights and biases
+        self.layer1_weights = weight_variable([feature_size, n_hidden1])
+        self.layer1_biases = bias_variable([n_hidden1])
+        self.layer2_weights = weight_variable([n_hidden1, n_hidden2])
+        self.layer2_biases = bias_variable([n_hidden2])
+        self.layer3_weights = weight_variable([n_hidden2, n_hidden3])
+        self.layer3_biases = bias_variable([n_hidden3])
+        self.layer4_weights = weight_variable([n_hidden3, num_of_classes])
+        self.layer4_biases = bias_variable([num_of_classes])
+
+        self.params = [
+            self.layer1_weights,
+            self.layer1_biases,
+            self.layer2_weights,
+            self.layer2_biases,
+            self.layer3_weights,
+            self.layer3_biases,
+            self.layer4_weights,
+            self.layer4_biases,
+        ]
+
+    def forward(self, data, proba=1.0):
+        layer1 = tf.nn.relu(tf.matmul(data, self.layer1_weights) + self.layer1_biases)
+        layer1 = tf.nn.dropout(layer1, proba)
+
+        layer2 = tf.nn.relu(tf.matmul(layer1, self.layer2_weights) + self.layer2_biases)
+        layer2 = tf.nn.dropout(layer2, proba)
+
+        layer3 = tf.nn.relu(tf.matmul(layer2, self.layer3_weights) + self.layer3_biases)
+        layer3 = tf.nn.dropout(layer3, proba)
+
+        return tf.matmul(layer3, self.layer4_weights) + self.layer4_biases
+
+class RNN(object):
+    def __init__(self, feature_size, batch_size, num_of_classes, **kwargs):
+        self.feature_size = feature_size
+        self.batch_size = batch_size
+        self.n_hidden = kwargs['n_hidden'] # 200
+
+        # weights and biases
+        self.layer1_weights = weight_variable([feature_size * self.n_hidden, num_of_classes])
+        self.layer1_biases = bias_variable([num_of_classes])
+
+        self.params = [
+            self.layer1_weights,
+            self.layer1_biases
+        ]
+
+    def forward(self, data, proba=1.0):
+        # Init RNN cell # tensorflow seems to take care of not reinitializing each time model is called
+        cell = tf.nn.rnn_cell.BasicLSTMCell(self.n_hidden, state_is_tuple=True)
+        # run rnn cell
+        layer1, _istate = tf.nn.dynamic_rnn(cell, data, dtype=tf.float32)
+        # reshape for output layer.
+        reshape = tf.reshape(layer1, shape=[self.batch_size, self.feature_size*self.n_hidden], name='test')
+        layer2 = tf.nn.dropout(reshape, proba)
+        return tf.matmul(layer2, self.layer1_weights) + self.layer1_biases
