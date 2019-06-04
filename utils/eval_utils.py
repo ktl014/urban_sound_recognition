@@ -44,7 +44,12 @@ def dump_data(data, fname='data/dataset_acc.p'):
         assert isinstance(data, dict), 'Data needs to be dictionary for merging'
         print(f'Detected existing filename. Now merging.')
         existing_data = load_data(fname)
-        data = {**data, **existing_data}
+        for key in existing_data:
+            if key in data:
+                existing_data[key] = data[key]
+                print('Overwriting old values')
+
+        data = existing_data
 
     pickle.dump(data, open(fname, 'wb'))
     print(f'Data saved as {fname}')

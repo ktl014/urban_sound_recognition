@@ -221,13 +221,14 @@ def run_session(train, test, LB, data_cols, graph, session_state,
                                          prediction=session_state['prediction'], during=False)
         print("Final Test accuracy: {:.1f}".format(accuracy(test_preds[name], test_labels)))
         end = timer()
-        test_preds[name] = (test_preds[name].ravel(), test_labels)
+        test_preds[name] = test_preds[name].ravel()
         acc_over_time[name] = accu
         print("time taken: {0} minutes {1:.1f} seconds".format((end - start)//60, (end - start)%60))
 
         # Save data
         dump_data(data=acc_over_time)
         dump_data(data=test_preds, fname='data/test_preds.p')
+        dump_data(data=test_labels, fname='data/test_labels.p')
 
 
 
