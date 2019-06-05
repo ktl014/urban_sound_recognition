@@ -17,6 +17,7 @@ from sklearn.decomposition import PCA
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import roc_curve, auc
 
 from data.dataloader import get_dataloader_v2
 from utils.eval_utils import dump_data
@@ -64,7 +65,7 @@ from utils.eval_utils import dump_data
 """END: Old feature extraction"""
 
 # Grab data
-trainLoader, testLoader, _, data_cols = get_dataloader_v2(db_prepped=True)
+trainLoader, testLoader, labelEncoder, data_cols = get_dataloader_v2(db_prepped=True)
 
 x_train = trainLoader[data_cols]
 y_train = trainLoader['label'].astype('category').cat.codes
@@ -94,10 +95,12 @@ grid_params = {
     'metric': ['euclidean', 'manhattan']
 }
 
-model = GridSearchCV(KNeighborsClassifier(), grid_params, cv=5, n_jobs=-1)
+# model = GridSearchCV(KNeighborsClassifier(), grid_params, cv=5, n_jobs=-1)
+model = KNeighborsClassifier(n_neighbors=11, weights='distance', metric='manhattan')
 model.fit(x_train_scaled, y_train)
 
 y_predict = model.predict(x_test_scaled)
+y_prob = model.predict_proba(x_test_scaled)
 cm =confusion_matrix(y_predict, y_test)
 cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 print(f'Confusion Matrix: \n{cm}')
@@ -107,6 +110,11 @@ for acc in np.argsort(cm.diagonal()):
 
 acc = model.score(x_test_scaled, y_test)
 print(f'Model Score: {acc}')
+
+test_labels = labelEncoder.transform(testLoader['label'])
+fpr, tpr, _ = roc_curve(y_test.ravel(), y_prob.reshape(-1))
+roc_auc = auc(fpr, tpr)
+print(f'Model AUC Score: {roc_auc}')
 
 # Store data
 name = 'KNN'
