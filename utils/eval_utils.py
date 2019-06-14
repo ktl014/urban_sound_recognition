@@ -44,10 +44,12 @@ def dump_data(data, fname='data/dataset_acc.p'):
         assert isinstance(data, dict), 'Data needs to be dictionary for merging'
         print(f'Detected existing filename. Now merging.')
         existing_data = load_data(fname)
-        for key in existing_data:
-            if key in data:
+        for key in data:
+            if key in existing_data:
                 existing_data[key] = data[key]
                 print('Overwriting old values')
+            else:
+                existing_data[key] = data[key]
 
         data = existing_data
 

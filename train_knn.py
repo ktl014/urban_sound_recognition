@@ -112,7 +112,7 @@ acc = model.score(x_test_scaled, y_test)
 print(f'Model Score: {acc}')
 
 test_labels = labelEncoder.transform(testLoader['label'])
-fpr, tpr, _ = roc_curve(y_test.ravel(), y_prob.reshape(-1))
+fpr, tpr, _ = roc_curve(test_labels.ravel(), y_prob.reshape(-1))
 roc_auc = auc(fpr, tpr)
 print(f'Model AUC Score: {roc_auc}')
 
@@ -120,6 +120,9 @@ print(f'Model AUC Score: {roc_auc}')
 name = 'KNN'
 acc_over_time = {}
 acc_over_time[name] = acc
+test_preds = {}
+test_preds[name] = y_prob.reshape(-1)
 
 # Save data
 dump_data(acc_over_time)
+dump_data(data=test_preds, fname='data/test_preds.p')
