@@ -176,6 +176,7 @@ def run_session(train, test, LB, data_cols, graph, session_state,
     """
     acc_over_time = {}
     test_preds = {}
+    loss_over_time = {}
     
     start = timer()
     test_labels = LB.transform(test['label'])
@@ -189,6 +190,7 @@ def run_session(train, test, LB, data_cols, graph, session_state,
 
         print("Initialized")
         accu = []
+        loss = []
         
         for iteration in range(num_itrs):
             
@@ -207,6 +209,7 @@ def run_session(train, test, LB, data_cols, graph, session_state,
             
             # mid model accuracy checks
             if (iteration % 1000 == 0) and not mute:
+                loss.append(l)
                 print("\tMinibatch loss at iteration {}: {}".format(iteration, l))
                 print("\tMinibatch accuracy: {:.1f}".format(accuracy(predictions, t_l)))
             if (iteration % 5000 == 0) and not mute:
@@ -223,14 +226,14 @@ def run_session(train, test, LB, data_cols, graph, session_state,
         end = timer()
         test_preds[name] = test_preds[name].ravel()
         acc_over_time[name] = accu
+        loss_over_time[name] = loss
         print("time taken: {0} minutes {1:.1f} seconds".format((end - start)//60, (end - start)%60))
 
         # Save data
         dump_data(data=acc_over_time)
         dump_data(data=test_preds, fname='data/test_preds.p')
-        dump_data(data=test_labels, fname='data/test_labels.p')
-
-
+        # dump_data(data=test_labels, fname='data/test_labels.p')
+        dump_data(data=loss_over_time, fname='data/dataset_loss.p')
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ librosa
 numpy
 torch
 tensorflow
-seaborn
 pickle
 soundfile
+cv2
+scipy
