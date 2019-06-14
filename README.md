@@ -2,6 +2,9 @@
 
 ## Team Members
 - Kevin Le (@ktl014)
+- Christian Gunther (@cjgunther)
+- Mike Ranis (@mranis)
+- Derar Durubeh (@ddurubeh)
 
 
 ## Problem
@@ -61,7 +64,7 @@ Root
 
 ## Instructions on running the code
 
-* Python version: Python 3.6.6 64-bit
+* Python version: Python 3.7
 ### Required packages
 
 1. librosa

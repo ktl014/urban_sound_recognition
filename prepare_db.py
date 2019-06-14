@@ -9,8 +9,6 @@ import time
 from data.dataloader import get_dataloader
 
 # Module level constants
-root_dir = '/Users/ktl014/Google Drive/ECE Classes/ECE 228 Machine Learning w: Physical Applications/urban_sound'
-
 parser = argparse.ArgumentParser('Prepare preprocessed dataset')
 # parser.add_argument('--window_size', type=int,
 #                  help='Window size')
